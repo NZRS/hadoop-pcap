@@ -9,17 +9,18 @@ import net.ripe.hadoop.pcap.packet.Packet;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.serde.Constants;
-import org.apache.hadoop.hive.serde2.Deserializer;
-import org.apache.hadoop.hive.serde2.SerDeException;
-import org.apache.hadoop.hive.serde2.SerDeStats;
+import org.apache.hadoop.hive.serde.serdeConstants;
+import org.apache.hadoop.hive.serde2.*;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
 import org.apache.hadoop.io.ObjectWritable;
 import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.Text;
 
-public class PcapDeserializer implements Deserializer {
+@SerDeSpec(schemaProps={serdeConstants.LIST_COLUMNS, serdeConstants.LIST_COLUMN_TYPES})
+public class PcapDeserializer extends AbstractSerDe {
 	ObjectInspector inspector;
 	ArrayList<Object> row;
 	int numColumns;
@@ -33,11 +34,11 @@ public class PcapDeserializer implements Deserializer {
 
 	@Override
 	public void initialize(Configuration cfg, Properties props) throws SerDeException {		
-		String columnNameProperty = props.getProperty(Constants.LIST_COLUMNS);
+		String columnNameProperty = props.getProperty(serdeConstants.LIST_COLUMNS);
 		columnNames = Arrays.asList(columnNameProperty.split(","));
 		numColumns = columnNames.size();
 
-		String columnTypeProperty = props.getProperty(Constants.LIST_COLUMN_TYPES);
+		String columnTypeProperty = props.getProperty(serdeConstants.LIST_COLUMN_TYPES);
 		List<TypeInfo> columnTypes = TypeInfoUtils.getTypeInfosFromTypeString(columnTypeProperty);
 
 		// Ensure we have the same number of column names and types
@@ -52,6 +53,12 @@ public class PcapDeserializer implements Deserializer {
         }
         inspector = ObjectInspectorFactory.getStandardStructObjectInspector(columnNames, inspectors);
 	}
+
+	@Override
+	public Writable serialize(Object obj, ObjectInspector objIns)
+		throws SerDeException {
+			throw new UnsupportedOperationException("PCAP SerDe doesn't support the serialize() method");
+		}
 
 	@Override
 	public Object deserialize(Writable w) throws SerDeException {
@@ -69,5 +76,10 @@ public class PcapDeserializer implements Deserializer {
 	@Override
 	public ObjectInspector getObjectInspector() throws SerDeException {
 		return inspector;
+	}
+
+	@Override
+	public Class<? extends Writable> getSerializedClass() {
+		return Text.class;
 	}
 }
